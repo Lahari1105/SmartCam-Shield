@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}History | Smart Cam Shield{% endblock %}
+
+{% block content %}
+<section class="history-section">
+    <div class="history-container">
+
+        <div class="history-header">
+            <div>
+                <h1 class="history-title">Scan History</h1>
+                <p class="history-subtitle">Review your past detection scans and results</p>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="header-action-btn">
+                <span>🔍</span> New Scan
+            </a>
+        </div>
+
+        <!-- Loading state -->
+        <div class="history-loading" id="historyLoading">
+            <div class="loading-spinner"></div>
+            <p>Loading scan history...</p>
+        </div>
+
+        <!-- Empty state -->
+        <div class="history-empty" id="historyEmpty" style="display:none;">
+            <div class="history-empty-icon">📋</div>
+            <h3>No Scans Yet</h3>
+            <p>Start a new scan from the dashboard to see your history here.</p>
+            <a href="{{ url_for('dashboard') }}" class="primary-btn">Start First Scan</a>
+        </div>
+
+        <!-- History list -->
+        <div class="history-list" id="historyList" style="display:none;"></div>
+
+        <!-- Detail modal -->
+        <div class="modal-overlay" id="detailModal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Scan Details</h2>
+                    <button class="modal-close" id="modalClose" type="button">✕</button>
+                </div>
+                <div class="modal-body" id="modalBody"></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

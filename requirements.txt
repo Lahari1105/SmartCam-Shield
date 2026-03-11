@@ -1,0 +1,10 @@
+Flask
+tensorflow
+numpy
+pillow
+xgboost
+gunicorn
+pymongo
+bcrypt
+opencv-python-headless
+flask-cors

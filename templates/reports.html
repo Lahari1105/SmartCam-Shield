@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Reports | Smart Cam Shield{% endblock %}
+
+{% block content %}
+<section class="reports-page-section">
+    <div class="reports-panel">
+        <div class="reports-header">
+            <h2>Recent Reports</h2>
+            <a href="#" class="view-all-btn">View All</a>
+        </div>
+
+        <div class="reports-table-wrapper">
+            <table class="reports-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Confidence</th>
+                        <th>Location</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>{{ report.date }}</td>
+                        <td>
+                            {% if report.status|lower in ['detected', 'suspicious object detected'] %}
+                                <span class="status-pill detected">Detected</span>
+                            {% else %}
+                                <span class="status-pill safe">Safe</span>
+                            {% endif %}
+                        </td>
+                        <td class="confidence-cell">{{ report.confidence }}</td>
+                        <td>{{ report.location }}</td>
+                        <td class="arrow-cell">&#8250;</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

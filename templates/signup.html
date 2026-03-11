@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up | Smart Cam Shield{% endblock %}
+
+{% block content %}
+<section class="auth-premium-section">
+    <div class="auth-premium-card">
+
+        <div class="auth-logo-wrap">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Smart Cam Shield Logo" class="auth-logo">
+        </div>
+
+        <h1 class="auth-premium-title">SIGN UP</h1>
+
+        <form class="auth-premium-form" id="signupForm" autocomplete="off">
+            <div class="input-group">
+                <span class="input-icon">👤</span>
+                <input type="text" name="username" id="signupUsername" placeholder="Enter your username" required minlength="3">
+            </div>
+
+            <div class="input-group">
+                <span class="input-icon">✉️</span>
+                <input type="email" name="email" id="signupEmail" placeholder="Enter your email" required>
+            </div>
+
+            <div class="input-group">
+                <span class="input-icon">🔒</span>
+                <input type="password" name="password" id="signupPassword" placeholder="Create a password (min 6 chars)" required minlength="6">
+            </div>
+
+            <div class="form-error" id="signupError" style="display:none;"></div>
+
+            <button type="submit" class="auth-main-btn" id="signupSubmitBtn">
+                <span class="btn-text">SIGN UP</span>
+                <span class="btn-loader" style="display:none;"></span>
+            </button>
+
+            <p class="auth-switch-text">
+                Already have an account?
+                <a href="{{ url_for('login') }}">Login</a>
+            </p>
+        </form>
+    </div>
+</section>
+{% endblock %}

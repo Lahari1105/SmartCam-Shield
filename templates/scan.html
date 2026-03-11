@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Scan | Smart Cam Shield{% endblock %}
+
+{% block content %}
+<section class="scan-premium-section">
+    <div class="scan-premium-card">
+        <h1 id="scanTitle" class="scan-premium-title">SCAN INITIATED</h1>
+
+        <div class="scan-visual-wrapper">
+            <div id="scanRing" class="scan-ring scanning">
+                <div class="scan-grid"></div>
+                <div class="scan-center-logo">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Smart Cam Shield Logo">
+                </div>
+            </div>
+        </div>
+
+        <div class="scan-video-hidden">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div id="scanProgressArea" class="scan-progress-area">
+            <div class="scan-progress-bar">
+                <div id="scanProgressFill" class="scan-progress-fill"></div>
+            </div>
+
+            <p id="scanStatusText" class="scan-status-main">SCANNING...</p>
+            <p id="scanSubText" class="scan-status-sub">PLEASE WAIT</p>
+        </div>
+
+        <div id="scanSuccessArea" class="scan-success-area" style="display: none;">
+            <p class="scan-success-text">SUCCESS</p>
+            <button id="continueBtn" class="scan-continue-btn" type="button">CONTINUE</button>
+        </div>
+
+        <div class="scan-control-buttons">
+            <button id="startCameraBtn" class="scan-action-btn" type="button">START CAMERA</button>
+            <button id="captureBtn" class="scan-action-btn secondary" type="button">START SCAN</button>
+            <button id="stopCameraBtn" class="scan-action-btn danger" type="button">STOP</button>
+        </div>
+
+        <div id="resultBox" class="scan-result-box">
+            <p>No scan performed yet.</p>
+        </div>
+
+        <div class="scan-bottom-link">
+            <span>Need an account?</span>
+            <a href="{{ url_for('signup') }}">Sign Up</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

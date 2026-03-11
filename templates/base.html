@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Cam Shield{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Smart Cam Shield Logo" class="logo-img">
+            <div class="logo-text">Smart Cam Shield</div>
+        </div>
+
+        <ul class="nav-links">
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="{{ url_for('home') }}#features">Features</a></li>
+            <li class="nav-auth-only" style="display:none;"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="nav-auth-only" style="display:none;"><a href="{{ url_for('history') }}">History</a></li>
+            <li><a href="{{ url_for('home') }}#about">About</a></li>
+            <li><a href="{{ url_for('home') }}#contact">Contact</a></li>
+        </ul>
+
+        <div class="auth-buttons" id="authButtons">
+            <a class="login-btn" href="{{ url_for('login') }}" id="navLoginBtn">Login</a>
+            <a class="signup-btn" href="{{ url_for('signup') }}" id="navSignupBtn">Sign Up</a>
+            <span class="nav-user-info" id="navUserInfo" style="display:none;">
+                <span class="nav-username" id="navUsername"></span>
+                <button class="logout-btn" id="navLogoutBtn" type="button">Logout</button>
+            </span>
+        </div>
+    </nav>
+
+    <!-- Toast notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    {% block content %}{% endblock %}
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

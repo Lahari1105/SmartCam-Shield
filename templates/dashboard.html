@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Smart Cam Shield{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container">
+
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="dashboard-header-left">
+                <h1 class="dashboard-title">Detection Dashboard</h1>
+                <p class="dashboard-subtitle">Upload a video to scan for hidden cameras using AI-powered detection</p>
+            </div>
+            <div class="dashboard-header-right">
+                <a href="{{ url_for('history') }}" class="header-action-btn">
+                    <span>📋</span> View History
+                </a>
+            </div>
+        </div>
+
+        <!-- Main content grid -->
+        <div class="dashboard-grid">
+
+            <!-- Left: Upload area -->
+            <div class="dashboard-card upload-card">
+                <h2 class="card-title">
+                    <span class="card-icon">📹</span>
+                    Upload Video
+                </h2>
+
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-zone-content">
+                        <div class="upload-icon-wrap">
+                            <svg class="upload-icon" viewBox="0 0 48 48" fill="none">
+                                <path d="M24 4L24 32M24 4L16 12M24 4L32 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M8 28V38C8 40.2091 9.79086 42 12 42H36C38.2091 42 40 40.2091 40 38V28" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <p class="upload-text-main">Drag & drop your video here</p>
+                        <p class="upload-text-sub">or click to browse files</p>
+                        <p class="upload-text-formats">Supports MP4, AVI, MOV, MKV (max 100MB)</p>
+                    </div>
+                    <input type="file" id="videoFileInput" accept="video/*" class="upload-file-input">
+                </div>
+
+                <!-- Video preview -->
+                <div class="video-preview-area" id="videoPreviewArea" style="display:none;">
+                    <div class="video-preview-header">
+                        <span class="video-filename" id="videoFilename"></span>
+                        <button type="button" class="remove-video-btn" id="removeVideoBtn">✕</button>
+                    </div>
+                    <video id="videoPreview" controls class="video-preview-player"></video>
+                </div>
+
+                <!-- Analyze button -->
+                <button type="button" class="analyze-btn" id="analyzeBtn" disabled>
+                    <span class="btn-text">🔍 Analyze Video</span>
+                    <span class="btn-loader" style="display:none;"></span>
+                </button>
+
+                <!-- Progress bar -->
+                <div class="analysis-progress" id="analysisProgress" style="display:none;">
+                    <div class="analysis-progress-header">
+                        <span class="progress-label">Analyzing frames...</span>
+                        <span class="progress-percent" id="progressPercent">0%</span>
+                    </div>
+                    <div class="analysis-progress-bar">
+                        <div class="analysis-progress-fill" id="analysisProgressFill"></div>
+                    </div>
+                    <p class="progress-status" id="progressStatus">Uploading video...</p>
+                </div>
+            </div>
+
+            <!-- Right: Results area -->
+            <div class="dashboard-card results-card" id="resultsCard">
+                <h2 class="card-title">
+                    <span class="card-icon">📊</span>
+                    Detection Results
+                </h2>
+
+                <!-- Empty state -->
+                <div class="results-empty" id="resultsEmpty">
+                    <div class="results-empty-icon">🛡️</div>
+                    <p class="results-empty-text">Upload a video to start scanning</p>
+                    <p class="results-empty-sub">Our AI will analyze each frame for hidden cameras</p>
+                </div>
+
+                <!-- Results content (hidden initially) -->
+                <div class="results-content" id="resultsContent" style="display:none;">
+
+                    <!-- Status banner -->
+                    <div class="result-status-banner" id="resultStatusBanner">
+                        <div class="status-icon" id="statusIcon"></div>
+                        <div class="status-info">
+                            <h3 class="status-label" id="statusLabel"></h3>
+                            <p class="status-confidence" id="statusConfidence"></p>
+                        </div>
+                    </div>
+
+                    <!-- Detection canvas -->
+                    <div class="detection-canvas-wrap" id="detectionCanvasWrap" style="display:none;">
+                        <h3 class="section-subtitle">Detected Object</h3>
+                        <div class="canvas-container">
+                            <canvas id="detectionCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Model breakdown -->
+                    <div class="model-breakdown">
+                        <h3 class="section-subtitle">Model Analysis</h3>
+
+                        <div class="model-result-row" id="yoloResultRow">
+                            <div class="model-info">
+                                <span class="model-name">YOLOv8</span>
+                                <span class="model-desc">Object Detection</span>
+                            </div>
+                            <div class="model-value" id="yoloValue">—</div>
+                        </div>
+
+                        <div class="model-result-row" id="mobilenetResultRow">
+                            <div class="model-info">
+                                <span class="model-name">MobileNetV2</span>
+                                <span class="model-desc">Image Classification</span>
+                            </div>
+                            <div class="model-value" id="mobilenetValue">—</div>
+                        </div>
+
+                        <div class="model-result-row" id="xgboostResultRow">
+                            <div class="model-info">
+                                <span class="model-name">XGBoost</span>
+                                <span class="model-desc">Network Analysis</span>
+                            </div>
+                            <div class="model-value" id="xgboostValue">—</div>
+                        </div>
+                    </div>
+
+                    <!-- Frame details -->
+                    <div class="frame-details" id="frameDetails" style="display:none;">
+                        <h3 class="section-subtitle">Frame Analysis</h3>
+                        <div class="frame-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalFrames">0</span>
+                                <span class="stat-label">Frames Analyzed</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalDetections">0</span>
+                                <span class="stat-label">Detections</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reasons -->
+                    <div class="detection-reasons" id="detectionReasons" style="display:none;">
+                        <h3 class="section-subtitle">Detection Reasons</h3>
+                        <ul class="reasons-list" id="reasonsList"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

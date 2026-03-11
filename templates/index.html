@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Home | Smart Cam Shield{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h1>Protect Your Privacy from Hidden Cameras</h1>
+        <p>
+            Advanced AI-based scanning to help detect suspicious devices,
+            analyze captured frames, and improve room safety in real time.
+        </p>
+
+        <div class="hero-buttons">
+            <a href="{{ url_for('scan') }}" class="primary-btn">Start Scan Now</a>
+            <a href="#about" class="secondary-btn">Learn More</a>
+        </div>
+    </div>
+</section>
+
+<section id="features" class="content-section">
+    <h2>Key Features</h2>
+    <div class="card-grid">
+        <div class="card">
+            <h3>Real-Time Detection</h3>
+            <p>Use live camera input to scan surroundings and identify suspicious objects instantly.</p>
+        </div>
+        <div class="card">
+            <h3>AI Powered Scanning</h3>
+            <p>Combines detection and classification models for more reliable hidden camera screening.</p>
+        </div>
+        <div class="card">
+            <h3>Network Analysis</h3>
+            <p>Uses WiFi traffic-based risk scoring to flag unusual network behavior from hidden devices.</p>
+        </div>
+        <div class="card">
+            <h3>Detection History</h3>
+            <p>Review previous scans and maintain a record of suspicious detections and risk levels.</p>
+        </div>
+        <div class="card">
+            <h3>Privacy Protection</h3>
+            <p>Built to support personal security in hotel rooms, homes, workplaces, and private spaces.</p>
+        </div>
+    </div>
+</section>
+
+<section id="about" class="content-section dark-section">
+    <h2>About Smart Cam Shield</h2>
+    <p>
+        Smart Cam Shield is an AI-driven hidden camera detection platform designed to improve privacy and personal safety.
+        It uses computer vision models and intelligent analysis to help users identify suspicious devices that are often
+        difficult to detect manually.
+    </p>
+    <p>
+        The system combines image scanning, object detection, classification, and network-based assessment into a single
+        easy-to-use web platform that can be accessed directly from the browser.
+    </p>
+</section>
+
+<section class="content-section">
+    <h2>Services</h2>
+    <div class="card-grid">
+        <div class="card">
+            <h3>Room Scan</h3>
+            <p>Scan rooms and enclosed spaces using your camera feed.</p>
+        </div>
+        <div class="card">
+            <h3>Object Classification</h3>
+            <p>Evaluate suspicious objects with AI-backed image classification.</p>
+        </div>
+        <div class="card">
+            <h3>Risk Reporting</h3>
+            <p>Get structured detection summaries with confidence and threat level.</p>
+        </div>
+    </div>
+</section>
+
+<section id="contact" class="content-section dark-section">
+    <h2>Contact</h2>
+    <p>Email: hiddencamera@gmail.com</p>
+    <p>Smart Cam Shield helps you stay alert, protected, and in control of your privacy.</p>
+</section>
+{% endblock %}
