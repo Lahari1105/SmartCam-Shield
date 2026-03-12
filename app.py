@@ -94,9 +94,14 @@ def load_tflite_model(model_path):
     if not os.path.exists(model_path):
         print(f"Model not found: {model_path}")
         return None
-    interpreter = tflite.Interpreter(model_path=model_path)
-    interpreter.allocate_tensors()
-    return interpreter
+    try:
+        interpreter = tflite.Interpreter(model_path=model_path)
+        interpreter.allocate_tensors()
+        print(f"Model loaded successfully: {model_path}")
+        return interpreter
+    except Exception as e:
+        print(f"Failed to load model {model_path}: {e}")
+        return None
 
 yolo_interpreter = load_tflite_model(YOLO_MODEL_PATH)
 mobilenet_interpreter = load_tflite_model(MOBILENET_MODEL_PATH)
@@ -106,8 +111,13 @@ mobilenet_interpreter = load_tflite_model(MOBILENET_MODEL_PATH)
 # --------------------------------------------------
 xgb_model = None
 if os.path.exists(XGB_MODEL_PATH):
-    xgb_model = xgb.Booster()
-    xgb_model.load_model(XGB_MODEL_PATH)
+    try:
+        xgb_model = xgb.Booster()
+        xgb_model.load_model(XGB_MODEL_PATH)
+        print(f"XGBoost model loaded successfully: {XGB_MODEL_PATH}")
+    except Exception as e:
+        print(f"Failed to load XGBoost model: {e}")
+        xgb_model = None
 else:
     print(f"XGBoost model not found: {XGB_MODEL_PATH}")
 
