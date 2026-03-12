@@ -1,4 +1,5 @@
 Flask
+tflite-runtime==2.14.0
 numpy
 pillow
 xgboost
