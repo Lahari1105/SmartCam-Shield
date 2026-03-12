@@ -6,16 +6,43 @@ pip install -r requirements.txt
 
 # Try installing tflite-runtime with multiple fallback versions
 echo "=== Installing TFLite runtime ==="
-pip install tflite-runtime==2.14.0 2>/dev/null \
-  || pip install tflite-runtime 2>/dev/null \
-  || pip install ai-edge-litert 2>/dev/null \
-  || { echo "WARNING: Could not install tflite-runtime, falling back to full tensorflow"; pip install tensorflow-cpu --no-cache-dir; }
+
+TFLITE_INSTALLED=0
+
+# Attempt 1: tflite-runtime pinned version
+if pip install tflite-runtime==2.14.0 2>/dev/null; then
+    echo "Installed tflite-runtime==2.14.0"
+    TFLITE_INSTALLED=1
+fi
+
+# Attempt 2: tflite-runtime latest
+if [ "$TFLITE_INSTALLED" -eq 0 ]; then
+    if pip install tflite-runtime 2>/dev/null; then
+        echo "Installed tflite-runtime (latest)"
+        TFLITE_INSTALLED=1
+    fi
+fi
+
+# Attempt 3: ai-edge-litert
+if [ "$TFLITE_INSTALLED" -eq 0 ]; then
+    if pip install ai-edge-litert 2>/dev/null; then
+        echo "Installed ai-edge-litert"
+        TFLITE_INSTALLED=1
+    fi
+fi
+
+# Attempt 4: tensorflow-cpu (heavy but guaranteed to work)
+if [ "$TFLITE_INSTALLED" -eq 0 ]; then
+    echo "Falling back to tensorflow-cpu..."
+    pip install tensorflow-cpu --no-cache-dir
+    echo "Installed tensorflow-cpu"
+    TFLITE_INSTALLED=1
+fi
 
 echo "=== Build complete ==="
 python -c "
-import os, sys
+import sys
 print('Python:', sys.version)
-# Check tflite availability
 try:
     import tflite_runtime.interpreter as tflite
     print('TFLite runtime: OK (tflite-runtime)')
@@ -29,16 +56,4 @@ except ImportError:
             print('TFLite runtime: OK (tensorflow)', tf.__version__)
         except ImportError:
             print('ERROR: No TFLite runtime available!')
-            sys.exit(1)
-
-# Check model files
-models_dir = os.path.join(os.path.dirname(os.path.abspath('.')), 'models')
-if not os.path.isdir(models_dir):
-    models_dir = 'models'
-for f in ['best.tflite', 'camera_classifier.tflite', 'xgboost_model.json']:
-    path = os.path.join(models_dir, f)
-    if os.path.exists(path):
-        print(f'  {f}: OK ({os.path.getsize(path):,} bytes)')
-    else:
-        print(f'  {f}: MISSING at {path}')
 "

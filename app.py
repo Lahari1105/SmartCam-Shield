@@ -14,17 +14,23 @@ from PIL import Image  # pyre-ignore[21]
 import cv2  # pyre-ignore[21]
 
 # TensorFlow Lite — cascading fallback for Render/Linux compatibility
+tflite = None
 try:
     import tflite_runtime.interpreter as tflite  # pyre-ignore[21]  # type: ignore[import]
     print("[STARTUP] Using tflite-runtime")
-except ImportError:
+except Exception:
     try:
         from ai_edge_litert import interpreter as tflite  # pyre-ignore[21]  # type: ignore[import]
         print("[STARTUP] Using ai-edge-litert")
-    except ImportError:
-        import tensorflow as tf  # pyre-ignore[21]  # type: ignore[import]
-        tflite = tf.lite  # type: ignore
-        print(f"[STARTUP] Using full tensorflow {tf.__version__}")
+    except Exception:
+        try:
+            import tensorflow as tf  # pyre-ignore[21]  # type: ignore[import]
+            tflite = tf.lite  # type: ignore
+            print(f"[STARTUP] Using full tensorflow {tf.__version__}")
+        except Exception as e:
+            print(f"[STARTUP] WARNING: No TFLite runtime available! Error: {e}")
+            print("[STARTUP] Models will NOT be loaded — install tflite-runtime or tensorflow")
+            tflite = None
 
 # XGBoost
 import xgboost as xgb  # pyre-ignore[21]
@@ -99,8 +105,11 @@ YOLO_CONF_THRESHOLD = 0.15
 # LOAD TFLITE MODELS
 # --------------------------------------------------
 def load_tflite_model(model_path):
+    if tflite is None:
+        print(f"Cannot load model (no TFLite runtime): {model_path}")
+        return None
     if not os.path.exists(model_path):
-        print(f"Model not found: {model_path}")
+        print(f"Model file not found: {model_path}")
         return None
     try:
         interpreter = tflite.Interpreter(model_path=model_path)
