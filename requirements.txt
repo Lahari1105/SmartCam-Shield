@@ -5,6 +5,7 @@ pillow
 xgboost
 gunicorn
 pymongo
+dnspython
 bcrypt
 opencv-python-headless
 flask-cors

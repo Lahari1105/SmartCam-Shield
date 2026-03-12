@@ -1637,8 +1637,69 @@ a {
     filter: drop-shadow(0 0 12px rgba(255, 188, 67, 0.2));
 }
 
-.scan-video-hidden {
-    display: none;
+/* Camera preview */
+.scan-camera-preview {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto 28px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid rgba(240, 200, 97, 0.35);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+    background: #000;
+    z-index: 1;
+}
+
+.scan-camera-preview video {
+    width: 100%;
+    display: block;
+    border-radius: 14px;
+    min-height: 280px;
+    object-fit: cover;
+}
+
+.scan-camera-overlay {
+    position: absolute;
+    inset: 12px;
+    border-radius: 10px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.scan-corner {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-color: #f0c861;
+    border-style: solid;
+    border-width: 0;
+}
+
+.scan-corner.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 6px; }
+.scan-corner.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 6px; }
+.scan-corner.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 6px; }
+.scan-corner.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 6px; }
+
+.scan-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #f0c861 30%, #f0c861 70%, transparent);
+    box-shadow: 0 0 12px rgba(240, 200, 97, 0.5);
+    animation: scanSweep 2.5s ease-in-out infinite;
+    opacity: 0;
+}
+
+.scan-line.active {
+    opacity: 1;
+}
+
+@keyframes scanSweep {
+    0% { top: 5%; }
+    50% { top: 90%; }
+    100% { top: 5%; }
 }
 
 .scan-progress-area,
@@ -1855,5 +1916,492 @@ a {
 
     .frame-stats {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ========================================
+   SCAN PAGE — TABS & LIVE CAMERA
+   ======================================== */
+
+/* Tab Switcher */
+.scan-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    background: rgba(10, 10, 10, 0.6);
+}
+
+.scan-tab-btn {
+    flex: 1;
+    padding: 14px 18px;
+    background: transparent;
+    border: none;
+    color: #8a7a52;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.scan-tab-btn:hover {
+    color: #f0e6c8;
+    background: rgba(212, 175, 55, 0.06);
+}
+
+.scan-tab-btn.active {
+    color: #111;
+    background: linear-gradient(135deg, #f0c861, #d89e33);
+    box-shadow: 0 2px 12px rgba(216, 158, 51, 0.25);
+}
+
+.tab-icon {
+    font-size: 1.1rem;
+}
+
+/* Live Camera Container */
+.live-camera-container {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    background: #000;
+    margin-bottom: 16px;
+}
+
+.live-camera-container video {
+    width: 100%;
+    display: block;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+/* Scan corners overlay reuse */
+.scan-camera-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.scan-corner {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: #f0c861;
+    border-style: solid;
+    border-width: 0;
+}
+
+.scan-corner.tl { top: 16px; left: 16px; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
+.scan-corner.tr { top: 16px; right: 16px; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
+.scan-corner.bl { bottom: 16px; left: 16px; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
+.scan-corner.br { bottom: 16px; right: 16px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
+
+.scan-line {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #f0c861, transparent);
+    box-shadow: 0 0 12px rgba(240, 200, 97, 0.5);
+    opacity: 0;
+    top: 20%;
+}
+
+.scan-line.active {
+    opacity: 1;
+    animation: scanLineMove 2s ease-in-out infinite;
+}
+
+@keyframes scanLineMove {
+    0% { top: 10%; }
+    50% { top: 85%; }
+    100% { top: 10%; }
+}
+
+/* Live scanning badge */
+.live-scanning-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 59, 59, 0.4);
+    color: #ff6b6b;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff3b3b;
+    animation: livePulse 1s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px #ff3b3b; }
+    50% { opacity: 0.4; box-shadow: 0 0 8px #ff3b3b; }
+}
+
+/* Placeholder */
+.live-placeholder {
+    text-align: center;
+    padding: 48px 20px;
+    border: 2px dashed rgba(212, 175, 55, 0.2);
+    border-radius: 14px;
+    background: rgba(212, 175, 55, 0.02);
+    margin-bottom: 16px;
+}
+
+.live-placeholder-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    opacity: 0.6;
+}
+
+.live-placeholder p {
+    color: #a09878;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+}
+
+.live-placeholder-note {
+    font-size: 0.8rem !important;
+    color: #6b5c36 !important;
+}
+
+/* Control buttons */
+.scan-control-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+}
+
+.scan-action-btn {
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f0c861, #d89e33);
+    color: #111;
+    box-shadow: 0 4px 16px rgba(216, 158, 51, 0.2);
+}
+
+.scan-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(216, 158, 51, 0.3);
+}
+
+.scan-action-btn.danger {
+    background: linear-gradient(135deg, #ff6b6b, #e84545);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(255, 59, 59, 0.2);
+}
+
+.scan-action-btn.danger:hover {
+    box-shadow: 0 6px 22px rgba(255, 59, 59, 0.3);
+}
+
+.scan-action-btn.small {
+    padding: 8px 16px;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+}
+
+.scan-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Live Result Card */
+.live-result-card {
+    background: rgba(12, 10, 6, 0.95);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+    margin-top: 16px;
+    transition: box-shadow 0.4s ease;
+}
+
+.live-result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    background: rgba(212, 175, 55, 0.06);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    color: #c4b88a;
+    transition: all 0.3s ease;
+}
+
+.live-result-header.safe {
+    background: rgba(53, 208, 109, 0.08);
+    border-bottom-color: rgba(53, 208, 109, 0.15);
+    color: #35d06d;
+}
+
+.live-result-header.detected {
+    background: rgba(255, 59, 59, 0.08);
+    border-bottom-color: rgba(255, 59, 59, 0.15);
+    color: #ff6b6b;
+    animation: detectedPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes detectedPulse {
+    0%, 100% { box-shadow: inset 0 0 20px rgba(255, 59, 59, 0.05); }
+    50% { box-shadow: inset 0 0 30px rgba(255, 59, 59, 0.12); }
+}
+
+.live-result-icon {
+    font-size: 1.4rem;
+}
+
+.live-result-status {
+    font-size: 1rem;
+}
+
+.live-result-details {
+    padding: 14px 20px;
+}
+
+.live-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.06);
+}
+
+.live-result-row:last-child {
+    border-bottom: none;
+}
+
+.live-result-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #8a7a52;
+}
+
+.live-result-value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #f0e6c8;
+}
+
+.live-result-reasons {
+    padding: 0 20px 14px;
+}
+
+.live-result-reasons ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.live-result-reasons li {
+    font-size: 0.8rem;
+    color: #ff9a9a;
+    padding: 4px 0 4px 16px;
+    position: relative;
+}
+
+.live-result-reasons li::before {
+    content: '⚠';
+    position: absolute;
+    left: 0;
+    font-size: 0.7rem;
+}
+
+.live-result-footer {
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(212, 175, 55, 0.06);
+}
+
+.live-result-time {
+    font-size: 0.75rem;
+    color: #6b5c36;
+}
+
+/* Live Error Card */
+.live-error-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    margin-top: 12px;
+    border-radius: 12px;
+    background: rgba(255, 59, 59, 0.08);
+    border: 1px solid rgba(255, 59, 59, 0.2);
+    color: #ff6b6b;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.live-error-icon {
+    font-size: 1.2rem;
+}
+
+/* Upload Zone (Scan Page) */
+.upload-zone-scan {
+    border: 2px dashed rgba(212, 175, 55, 0.25);
+    border-radius: 14px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(212, 175, 55, 0.02);
+    margin-bottom: 16px;
+}
+
+.upload-zone-scan:hover,
+.upload-zone-scan.drag-over {
+    border-color: #f0c861;
+    background: rgba(212, 175, 55, 0.06);
+    box-shadow: inset 0 0 30px rgba(212, 175, 55, 0.04);
+}
+
+.upload-zone-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    opacity: 0.7;
+}
+
+.upload-zone-scan p {
+    color: #a09878;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+}
+
+.upload-zone-or {
+    color: #6b5c36 !important;
+    font-size: 0.8rem !important;
+}
+
+.upload-zone-browse-btn {
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 8px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: #f0c861;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upload-zone-browse-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: #d4af37;
+}
+
+.upload-zone-hint {
+    color: #6b5c36 !important;
+    font-size: 0.75rem !important;
+    margin-top: 8px;
+}
+
+.upload-preview-area {
+    margin-bottom: 16px;
+}
+
+.upload-preview-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    font-size: 0.85rem;
+    color: #c4b88a;
+}
+
+/* Scan progress & result boxes */
+.scan-progress-area {
+    margin: 16px 0;
+}
+
+.scan-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(212, 175, 55, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.scan-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #d89e33, #f0c861);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.scan-status-main {
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f0c861;
+    letter-spacing: 1.5px;
+}
+
+.scan-result-box {
+    background: rgba(12, 10, 6, 0.9);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+    color: #a09878;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Responsive for scan page */
+@media (max-width: 600px) {
+    .scan-tabs {
+        flex-direction: column;
+    }
+
+    .scan-tab-btn {
+        padding: 12px 14px;
+        font-size: 0.85rem;
+    }
+
+    .live-camera-container video {
+        max-height: 280px;
+    }
+
+    .scan-premium-card {
+        padding: 20px 16px;
     }
 }

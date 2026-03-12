@@ -5,44 +5,136 @@
 {% block content %}
 <section class="scan-premium-section">
     <div class="scan-premium-card">
-        <h1 id="scanTitle" class="scan-premium-title">SCAN INITIATED</h1>
+        <h1 class="scan-premium-title">SCAN</h1>
 
-        <div class="scan-visual-wrapper">
-            <div id="scanRing" class="scan-ring scanning">
-                <div class="scan-grid"></div>
-                <div class="scan-center-logo">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Smart Cam Shield Logo">
+        <!-- Tab Switcher -->
+        <div class="scan-tabs" id="scanTabs">
+            <button class="scan-tab-btn active" data-tab="live" type="button" id="tabLiveBtn">
+                <span class="tab-icon">📷</span> Live Camera Scan
+            </button>
+            <button class="scan-tab-btn" data-tab="upload" type="button" id="tabUploadBtn">
+                <span class="tab-icon">📁</span> Upload Video
+            </button>
+        </div>
+
+        <!-- ============================== -->
+        <!-- TAB 1: LIVE CAMERA SCAN        -->
+        <!-- ============================== -->
+        <div class="scan-tab-content active" id="tabLiveContent">
+
+            <!-- Live camera preview -->
+            <div class="live-camera-container" id="liveCameraContainer" style="display:none;">
+                <video id="liveVideo" autoplay playsinline muted></video>
+                <div class="scan-camera-overlay">
+                    <div class="scan-corner tl"></div>
+                    <div class="scan-corner tr"></div>
+                    <div class="scan-corner bl"></div>
+                    <div class="scan-corner br"></div>
+                    <div class="scan-line active" id="liveScanLine"></div>
+                </div>
+                <div class="live-scanning-badge" id="liveScanningBadge">
+                    <span class="live-dot"></span> SCANNING LIVE
                 </div>
             </div>
-        </div>
 
-        <div class="scan-video-hidden">
-            <video id="video" autoplay playsinline muted></video>
-            <canvas id="canvas"></canvas>
-        </div>
+            <!-- Hidden canvas for frame capture -->
+            <canvas id="liveCanvas" style="display:none;"></canvas>
 
-        <div id="scanProgressArea" class="scan-progress-area">
-            <div class="scan-progress-bar">
-                <div id="scanProgressFill" class="scan-progress-fill"></div>
+            <!-- Placeholder when camera is off -->
+            <div class="live-placeholder" id="livePlaceholder">
+                <div class="live-placeholder-icon">📷</div>
+                <p>Click <strong>Start Live Scan</strong> to open your camera and begin real-time detection.</p>
+                <p class="live-placeholder-note">Requires HTTPS &amp; camera permission</p>
             </div>
 
-            <p id="scanStatusText" class="scan-status-main">SCANNING...</p>
-            <p id="scanSubText" class="scan-status-sub">PLEASE WAIT</p>
+            <!-- Control Buttons -->
+            <div class="scan-control-buttons">
+                <button id="startLiveScanBtn" class="scan-action-btn" type="button">START LIVE SCAN</button>
+                <button id="stopLiveScanBtn" class="scan-action-btn danger" type="button" style="display:none;">STOP SCAN</button>
+            </div>
+
+            <!-- Live Detection Result -->
+            <div class="live-result-card" id="liveResultCard" style="display:none;">
+                <div class="live-result-header" id="liveResultHeader">
+                    <span class="live-result-icon" id="liveResultIcon">⏳</span>
+                    <span class="live-result-status" id="liveResultStatus">Waiting...</span>
+                </div>
+                <div class="live-result-details">
+                    <div class="live-result-row">
+                        <span class="live-result-label">Object</span>
+                        <span class="live-result-value" id="liveResultObject">—</span>
+                    </div>
+                    <div class="live-result-row">
+                        <span class="live-result-label">Confidence</span>
+                        <span class="live-result-value" id="liveResultConfidence">—</span>
+                    </div>
+                    <div class="live-result-row">
+                        <span class="live-result-label">YOLO</span>
+                        <span class="live-result-value" id="liveResultYolo">—</span>
+                    </div>
+                    <div class="live-result-row">
+                        <span class="live-result-label">MobileNet</span>
+                        <span class="live-result-value" id="liveResultMobilenet">—</span>
+                    </div>
+                </div>
+                <div class="live-result-reasons" id="liveResultReasons" style="display:none;">
+                    <ul id="liveResultReasonsList"></ul>
+                </div>
+                <div class="live-result-footer">
+                    <span class="live-result-time" id="liveResultTime">Last update: —</span>
+                </div>
+            </div>
+
+            <!-- Error area -->
+            <div class="live-error-card" id="liveErrorCard" style="display:none;">
+                <span class="live-error-icon">⚠️</span>
+                <span class="live-error-msg" id="liveErrorMsg">Error</span>
+            </div>
         </div>
 
-        <div id="scanSuccessArea" class="scan-success-area" style="display: none;">
-            <p class="scan-success-text">SUCCESS</p>
-            <button id="continueBtn" class="scan-continue-btn" type="button">CONTINUE</button>
-        </div>
+        <!-- ============================== -->
+        <!-- TAB 2: UPLOAD VIDEO            -->
+        <!-- ============================== -->
+        <div class="scan-tab-content" id="tabUploadContent" style="display:none;">
 
-        <div class="scan-control-buttons">
-            <button id="startCameraBtn" class="scan-action-btn" type="button">START CAMERA</button>
-            <button id="captureBtn" class="scan-action-btn secondary" type="button">START SCAN</button>
-            <button id="stopCameraBtn" class="scan-action-btn danger" type="button">STOP</button>
-        </div>
+            <!-- Upload zone -->
+            <div class="upload-zone-scan" id="uploadZoneScan">
+                <div class="upload-zone-icon">📹</div>
+                <p>Drag & drop a video file here</p>
+                <p class="upload-zone-or">— or —</p>
+                <label class="upload-zone-browse-btn">
+                    Browse Files
+                    <input type="file" accept="video/*" id="uploadVideoInput" style="display:none;">
+                </label>
+                <p class="upload-zone-hint">MP4, AVI, MOV — Max 100 MB</p>
+            </div>
 
-        <div id="resultBox" class="scan-result-box">
-            <p>No scan performed yet.</p>
+            <!-- Upload preview -->
+            <div class="upload-preview-area" id="uploadPreviewArea" style="display:none;">
+                <video id="uploadVideoPreview" controls style="width:100%;max-height:300px;border-radius:10px;"></video>
+                <div class="upload-preview-info">
+                    <span id="uploadFilename">video.mp4</span>
+                    <button id="removeUploadBtn" class="scan-action-btn danger small" type="button">Remove</button>
+                </div>
+            </div>
+
+            <!-- Analyze button -->
+            <div class="scan-control-buttons">
+                <button id="analyzeUploadBtn" class="scan-action-btn" type="button" disabled>ANALYZE VIDEO</button>
+            </div>
+
+            <!-- Upload progress -->
+            <div id="uploadProgressArea" class="scan-progress-area" style="display:none;">
+                <div class="scan-progress-bar">
+                    <div id="uploadProgressFill" class="scan-progress-fill"></div>
+                </div>
+                <p id="uploadStatusText" class="scan-status-main">UPLOADING...</p>
+            </div>
+
+            <!-- Upload result -->
+            <div id="uploadResultBox" class="scan-result-box">
+                <p>No video analyzed yet.</p>
+            </div>
         </div>
 
         <div class="scan-bottom-link">

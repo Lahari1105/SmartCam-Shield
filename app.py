@@ -37,9 +37,11 @@ CORS(app)
 # --------------------------------------------------
 # MONGODB CONNECTION (lazy — app starts even if Mongo is down)
 # --------------------------------------------------
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://lmekala_db_user:Lahari1516@cluster0.udmpuon.mongodb.net/SmartCam_Shield?appName=Cluster0")
+print(f"[DEBUG] MONGO_URI = {MONGO_URI}")
 mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-db = mongo_client["smartcam_shield"]
+db = mongo_client["SmartCam_Shield"]
 users_collection = db["users"]
 scans_collection = db["scan_history"]
 
@@ -657,16 +659,109 @@ def predict_frame():
         wifi_result = predict_wifi_risk(data)
         final_result = fuse_results(yolo_result, mobilenet_result, wifi_result)
 
+        # Build confidence value
+        mob_conf = float(mobilenet_result.get("confidence", 0)) if mobilenet_result.get("suspicious") else 0
+        yolo_conf = 0.0
+        detections = yolo_result.get("detections", [])
+        if isinstance(detections, list):
+            for det in detections:
+                if isinstance(det, dict):
+                    yolo_conf = max(yolo_conf, float(det.get("confidence", 0)))
+        overall_confidence = round(max(mob_conf, yolo_conf) * 100, 1)  # type: ignore[call-overload]
+
+        # Save to MongoDB if user is logged in
+        scan_id = None
+        if "user_id" in session:
+            try:
+                thumb_b64 = pil_to_base64(image)
+                scan_doc = {
+                    "user_id": session["user_id"],
+                    "username": session.get("username", ""),
+                    "video_filename": "Camera Scan",
+                    "status": final_result["summary"],
+                    "suspicious": final_result["suspicious"],
+                    "confidence": overall_confidence,
+                    "total_frames": 1,
+                    "detection_count": len(detections) if isinstance(detections, list) else 0,
+                    "detections": detections[:10] if isinstance(detections, list) else [],  # type: ignore[index]
+                    "best_detection": detections[0] if isinstance(detections, list) and len(detections) > 0 else None,
+                    "timestamp": datetime.now(timezone.utc),
+                    "thumbnail": thumb_b64,
+                }
+                scan_id = str(scans_collection.insert_one(scan_doc).inserted_id)
+            except Exception as save_err:
+                print(f"Failed to save camera scan to history: {save_err}")
+
         return jsonify({
             "success": True,
             "final_result": final_result,
             "yolo_result": yolo_result,
             "mobilenet_result": mobilenet_result,
-            "wifi_analysis": wifi_result
+            "wifi_analysis": wifi_result,
+            "confidence": overall_confidence,
+            "scan_id": scan_id,
         })
 
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+
+# --------------------------------------------------
+# LIVE CAMERA DETECT API
+# --------------------------------------------------
+@app.route("/detect", methods=["POST"])
+def detect():
+    try:
+        data = request.get_json()
+        if not data or "image" not in data:
+            return jsonify({"detected": False, "object": "none", "confidence": 0, "message": "No image received"}), 400
+
+        image = decode_base64_image(data["image"])
+
+        # Run all models
+        yolo_result = predict_yolo(image)
+        mobilenet_result = predict_mobilenet(image)
+        wifi_result = predict_wifi_risk(data)
+        fusion = fuse_results(yolo_result, mobilenet_result, wifi_result)
+
+        # Build confidence
+        mob_conf = float(mobilenet_result.get("confidence", 0)) if mobilenet_result.get("suspicious") else 0
+        yolo_conf = 0.0
+        detections = yolo_result.get("detections", [])
+        if isinstance(detections, list):
+            for det in detections:
+                if isinstance(det, dict):
+                    yolo_conf = max(yolo_conf, float(det.get("confidence", 0)))
+        overall_confidence = round(max(mob_conf, yolo_conf) * 100, 1)  # type: ignore[call-overload]
+
+        detected = fusion["suspicious"]
+        obj_label = "hidden_camera" if detected else "none"
+
+        # Pick best label from detections
+        if isinstance(detections, list) and len(detections) > 0:
+            best_det = max(detections, key=lambda d: float(d.get("confidence", 0)) if isinstance(d, dict) else 0)
+            if isinstance(best_det, dict):
+                obj_label = best_det.get("label", obj_label)
+
+        return jsonify({
+            "detected": detected,
+            "object": obj_label,
+            "confidence": overall_confidence,
+            "summary": fusion["summary"],
+            "reasons": fusion.get("reasons", []),
+            "yolo": {
+                "available": yolo_result.get("available", False),
+                "detection_count": len(detections) if isinstance(detections, list) else 0,
+            },
+            "mobilenet": {
+                "available": mobilenet_result.get("available", False),
+                "label": mobilenet_result.get("label", "unknown"),
+                "confidence": round(float(mobilenet_result.get("confidence", 0)) * 100, 1),  # type: ignore[call-overload]
+            },
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"detected": False, "object": "error", "confidence": 0, "message": str(e)}), 500
 
 # --------------------------------------------------
 # HISTORY API
