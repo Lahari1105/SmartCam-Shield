@@ -1,6 +1,6 @@
 Flask
-tflite-runtime==2.14.0
-numpy<2.0.0
+ai-edge-litert
+numpy
 pillow
 xgboost
 gunicorn

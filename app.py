@@ -16,12 +16,12 @@ import cv2  # pyre-ignore[21]
 # TensorFlow Lite — cascading fallback for Render/Linux compatibility
 tflite = None
 try:
-    import tflite_runtime.interpreter as tflite  # pyre-ignore[21]  # type: ignore[import]
-    print("[STARTUP] Using tflite-runtime")
+    from ai_edge_litert import interpreter as tflite  # pyre-ignore[21]  # type: ignore[import]
+    print("[STARTUP] Using ai-edge-litert")
 except Exception:
     try:
-        from ai_edge_litert import interpreter as tflite  # pyre-ignore[21]  # type: ignore[import]
-        print("[STARTUP] Using ai-edge-litert")
+        import tflite_runtime.interpreter as tflite  # pyre-ignore[21]  # type: ignore[import]
+        print("[STARTUP] Using tflite-runtime")
     except Exception:
         try:
             import tensorflow as tf  # pyre-ignore[21]  # type: ignore[import]
@@ -29,7 +29,7 @@ except Exception:
             print(f"[STARTUP] Using full tensorflow {tf.__version__}")
         except Exception as e:
             print(f"[STARTUP] WARNING: No TFLite runtime available! Error: {e}")
-            print("[STARTUP] Models will NOT be loaded — install tflite-runtime or tensorflow")
+            print("[STARTUP] Models will NOT be loaded — install ai-edge-litert or tensorflow")
             tflite = None
 
 # XGBoost

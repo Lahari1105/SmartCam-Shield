@@ -9,8 +9,8 @@ python -c "
 import sys
 print('Python:', sys.version)
 
-import tflite_runtime.interpreter as tflite
-print('tflite-runtime: OK')
+from ai_edge_litert import interpreter as tflite
+print('ai-edge-litert: OK')
 
 interp = tflite.Interpreter(model_path='models/best.tflite')
 interp.allocate_tensors()
