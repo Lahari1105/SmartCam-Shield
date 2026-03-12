@@ -38,10 +38,10 @@ CORS(app)
 # MONGODB CONNECTION (lazy — app starts even if Mongo is down)
 # --------------------------------------------------
 
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://lmekala_db_user:Lahari1516@cluster0.udmpuon.mongodb.net/SmartCam_Shield?appName=Cluster0")
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://lmekala_db_user:Lahari1516@cluster0.udmpuon.mongodb.net/smartcam_shield?appName=Cluster0")
 print(f"[DEBUG] MONGO_URI = {MONGO_URI}")
 mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-db = mongo_client["SmartCam_Shield"]
+db = mongo_client["smartcam_shield"]
 users_collection = db["users"]
 scans_collection = db["scan_history"]
 
