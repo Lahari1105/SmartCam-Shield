@@ -85,9 +85,9 @@ XGB_MODEL_PATH = os.path.join(BASE_DIR, "models", "xgboost_model.json")
 MOBILENET_LABELS = ["normal_object", "hidden_camera"]
 YOLO_LABELS = ["hidden_camera"]
 
-# Thresholds
-MOBILENET_THRESHOLD = 0.60
-YOLO_CONF_THRESHOLD = 0.35
+# Thresholds (lowered for better sensitivity with these models)
+MOBILENET_THRESHOLD = 0.40
+YOLO_CONF_THRESHOLD = 0.15
 
 # --------------------------------------------------
 # LOAD TFLITE MODELS
@@ -228,7 +228,7 @@ def predict_mobilenet(image):
     return {
         "available": True,
         "label": label,
-        "confidence": round(pred_conf, 4),  # type: ignore[call-overload]
+        "confidence": round(float(pred_conf), 4),  # pyre-ignore[6]
         "suspicious": suspicious,
         "raw_probs": probs.tolist()
     }
@@ -241,20 +241,65 @@ def decode_yolo_output(raw_output):
     arr = np.squeeze(arr)
     detections = []
 
-    if arr.ndim == 2:
+    print(f"[YOLO DEBUG] Raw output shape: {arr.shape}, ndim: {arr.ndim}")
+
+    if arr.ndim == 1:
+        # Single detection or flat output — try interpreting as [x, y, w, h, conf, class...]
+        if len(arr) >= 6:
+            x, y, w, h = arr[:4]
+            class_scores = arr[4:]
+            class_id = int(np.argmax(class_scores))
+            confidence = float(class_scores[class_id])
+            if confidence >= YOLO_CONF_THRESHOLD:
+                label = YOLO_LABELS[class_id] if class_id < len(YOLO_LABELS) else f"class_{class_id}"
+                x1 = float(x - w / 2)
+                y1 = float(y - h / 2)
+                x2 = float(x + w / 2)
+                y2 = float(y + h / 2)
+                detections.append({
+                    "label": label,
+                    "confidence": round(float(confidence), 4),  # pyre-ignore[6]
+                    "bbox": [x1, y1, x2, y2],
+                    "bbox_center": [float(x), float(y), float(w), float(h)]
+                })
+
+    elif arr.ndim == 2:
+        # Transpose if needed: some YOLO models output (features, anchors) instead of (anchors, features)
         if arr.shape[0] < arr.shape[1]:
-            if arr.shape[0] in [6, 7, 84, 85]:
+            if arr.shape[0] in [5, 6, 7, 8, 84, 85]:
+                print(f"[YOLO DEBUG] Transposing from {arr.shape} to {arr.T.shape}")
                 arr = arr.T
 
+        print(f"[YOLO DEBUG] Final array shape for parsing: {arr.shape}")
+
         for row in arr:
-            if len(row) >= 6:
+            if len(row) >= 5:
                 x, y, w, h = row[:4]  # type: ignore[index]
                 class_scores = row[4:]  # type: ignore[index]
+
+                # Handle case where row has [x,y,w,h,objectness,class_scores...]
+                # vs [x,y,w,h,class_scores...]
                 if len(class_scores) == 0:
                     continue
-                class_id = int(np.argmax(class_scores))
-                confidence = float(class_scores[class_id])
-                if confidence >= YOLO_CONF_THRESHOLD:
+
+                # If first element of class_scores looks like objectness (> number of classes)
+                if len(row) >= 6 and len(YOLO_LABELS) == 1:
+                    # Could be [x,y,w,h,objectness,class_score]
+                    objectness = float(row[4])
+                    actual_scores = row[5:] if len(row) > 5 else row[4:5]
+                    class_id = int(np.argmax(actual_scores))
+                    confidence = float(actual_scores[class_id])
+                    # Use max of objectness * class_conf and plain class_conf
+                    effective_conf = max(confidence, objectness * confidence)
+                    if effective_conf < YOLO_CONF_THRESHOLD:
+                        # Also try objectness alone
+                        effective_conf = max(effective_conf, objectness)
+                else:
+                    class_id = int(np.argmax(class_scores))
+                    confidence = float(class_scores[class_id])
+                    effective_conf = confidence
+
+                if effective_conf >= YOLO_CONF_THRESHOLD:
                     label = YOLO_LABELS[class_id] if class_id < len(YOLO_LABELS) else f"class_{class_id}"
                     # Convert from center format to corner format for bounding box
                     x1 = float(x - w / 2)
@@ -263,10 +308,21 @@ def decode_yolo_output(raw_output):
                     y2 = float(y + h / 2)
                     detections.append({
                         "label": label,
-                        "confidence": round(confidence, 4),  # type: ignore[call-overload]
+                        "confidence": round(float(effective_conf), 4),  # pyre-ignore[6]
                         "bbox": [x1, y1, x2, y2],
                         "bbox_center": [float(x), float(y), float(w), float(h)]
                     })
+
+    elif arr.ndim == 3:
+        # Shape could be (1, num_detections, features) — squeeze the batch dim
+        arr = arr.reshape(-1, arr.shape[-1])
+        print(f"[YOLO DEBUG] Reshaped 3D to 2D: {arr.shape}")
+        return decode_yolo_output(arr)  # Recurse with 2D array
+
+    print(f"[YOLO DEBUG] Total detections found: {len(detections)}")
+    if detections:
+        best = max(detections, key=lambda d: d['confidence'])
+        print(f"[YOLO DEBUG] Best detection: {best['label']} conf={best['confidence']}")
 
     return detections
 
@@ -322,7 +378,7 @@ def predict_wifi_risk(data):
         "available": True,
         "network_risk": risk,
         "suspicious_device_found": suspicious,
-        "score": round(score, 4),  # type: ignore[call-overload]
+        "score": round(float(score), 4),  # pyre-ignore[6]
         "message": "WiFi analysis completed"
     }
 
@@ -373,7 +429,7 @@ def extract_frames_from_video(video_path, max_frames=30, interval=None):
             frame_indices = [int(step * i) for i in range(max_frames)]
     else:
         frame_indices = list(range(0, total_frames, int(fps * interval)))
-        frame_indices = frame_indices[:max_frames]  # type: ignore[index]
+        frame_indices = list(frame_indices)[:max_frames]  # pyre-ignore[16]
 
     frames = []
     for idx in frame_indices:
@@ -385,7 +441,7 @@ def extract_frames_from_video(video_path, max_frames=30, interval=None):
             pil_image = Image.fromarray(frame_rgb)
             frames.append({
                 "frame_index": idx,
-                "timestamp": round(idx / fps, 2),  # type: ignore[call-overload]
+                "timestamp": round(float(idx / fps), 2),  # pyre-ignore[6]
                 "image": pil_image
             })
 
@@ -597,7 +653,7 @@ def api_upload_video():
 
             mob_max = max(mob_confs) if mob_confs else 0.0
             raw_confidence: float = max(best_confidence, mob_max) * 100
-            overall_confidence: float = round(raw_confidence, 1)  # type: ignore[call-overload]
+            overall_confidence: float = round(float(raw_confidence), 1)  # pyre-ignore[6]
 
             # Build result
             result = {
@@ -624,7 +680,7 @@ def api_upload_video():
                 "confidence": overall_confidence,
                 "total_frames": len(frame_results),
                 "detection_count": len(all_detections),
-                "detections": all_detections[:10],  # type: ignore[index]
+                "detections": list(all_detections)[:10],  # pyre-ignore[16]
                 "best_detection": best_detection,
                 "timestamp": datetime.now(timezone.utc),
                 "thumbnail": first_thumb,
@@ -659,15 +715,17 @@ def predict_frame():
         wifi_result = predict_wifi_risk(data)
         final_result = fuse_results(yolo_result, mobilenet_result, wifi_result)
 
-        # Build confidence value
-        mob_conf = float(mobilenet_result.get("confidence", 0)) if mobilenet_result.get("suspicious") else 0
+        # Build confidence value — always include mobilenet confidence
+        mob_conf_raw = float(mobilenet_result.get("confidence", 0))
+        mob_is_camera = mobilenet_result.get("label") == "hidden_camera"
+        mob_conf = mob_conf_raw if mob_is_camera else 0.0
         yolo_conf = 0.0
         detections = yolo_result.get("detections", [])
         if isinstance(detections, list):
             for det in detections:
                 if isinstance(det, dict):
                     yolo_conf = max(yolo_conf, float(det.get("confidence", 0)))
-        overall_confidence = round(max(mob_conf, yolo_conf) * 100, 1)  # type: ignore[call-overload]
+        overall_confidence = round(float(max(mob_conf, yolo_conf) * 100), 1)  # pyre-ignore[6]
 
         # Save to MongoDB if user is logged in
         scan_id = None
@@ -683,7 +741,7 @@ def predict_frame():
                     "confidence": overall_confidence,
                     "total_frames": 1,
                     "detection_count": len(detections) if isinstance(detections, list) else 0,
-                    "detections": detections[:10] if isinstance(detections, list) else [],  # type: ignore[index]
+                    "detections": list(detections)[:10] if isinstance(detections, list) else [],  # pyre-ignore[16]
                     "best_detection": detections[0] if isinstance(detections, list) and len(detections) > 0 else None,
                     "timestamp": datetime.now(timezone.utc),
                     "thumbnail": thumb_b64,
@@ -723,15 +781,18 @@ def detect():
         wifi_result = predict_wifi_risk(data)
         fusion = fuse_results(yolo_result, mobilenet_result, wifi_result)
 
-        # Build confidence
-        mob_conf = float(mobilenet_result.get("confidence", 0)) if mobilenet_result.get("suspicious") else 0
+        # Build confidence — ALWAYS include mobilenet confidence, not just when suspicious
+        mob_conf_raw = float(mobilenet_result.get("confidence", 0))
+        mob_is_camera = mobilenet_result.get("label") == "hidden_camera"
+        mob_conf = mob_conf_raw if mob_is_camera else 0.0
+
         yolo_conf = 0.0
         detections = yolo_result.get("detections", [])
         if isinstance(detections, list):
             for det in detections:
                 if isinstance(det, dict):
                     yolo_conf = max(yolo_conf, float(det.get("confidence", 0)))
-        overall_confidence = round(max(mob_conf, yolo_conf) * 100, 1)  # type: ignore[call-overload]
+        overall_confidence = round(float(max(mob_conf, yolo_conf) * 100), 1)  # pyre-ignore[6]
 
         detected = fusion["suspicious"]
         obj_label = "hidden_camera" if detected else "none"
@@ -748,14 +809,21 @@ def detect():
             "confidence": overall_confidence,
             "summary": fusion["summary"],
             "reasons": fusion.get("reasons", []),
+            "models_loaded": {
+                "yolo": yolo_interpreter is not None,
+                "mobilenet": mobilenet_interpreter is not None,
+                "xgboost": xgb_model is not None,
+            },
             "yolo": {
                 "available": yolo_result.get("available", False),
                 "detection_count": len(detections) if isinstance(detections, list) else 0,
+                "best_confidence": round(float(yolo_conf * 100), 1),  # pyre-ignore[6]
             },
             "mobilenet": {
                 "available": mobilenet_result.get("available", False),
                 "label": mobilenet_result.get("label", "unknown"),
-                "confidence": round(float(mobilenet_result.get("confidence", 0)) * 100, 1),  # type: ignore[call-overload]
+                "confidence": round(float(mob_conf_raw * 100), 1),  # pyre-ignore[6]
+                "suspicious": mobilenet_result.get("suspicious", False),
             },
         })
 
@@ -846,6 +914,48 @@ def api_history_delete(scan_id):
         return jsonify({"success": False, "message": str(e)}), 500
 
 # --------------------------------------------------
+# MODEL STATUS DIAGNOSTIC ENDPOINT
+# --------------------------------------------------
+@app.route("/api/model_status", methods=["GET"])
+def api_model_status():
+    """Diagnostic endpoint to check if all AI models are loaded."""
+    status = {
+        "yolo": {
+            "loaded": yolo_interpreter is not None,
+            "path": YOLO_MODEL_PATH,
+            "file_exists": os.path.exists(YOLO_MODEL_PATH),
+        },
+        "mobilenet": {
+            "loaded": mobilenet_interpreter is not None,
+            "path": MOBILENET_MODEL_PATH,
+            "file_exists": os.path.exists(MOBILENET_MODEL_PATH),
+        },
+        "xgboost": {
+            "loaded": xgb_model is not None,
+            "path": XGB_MODEL_PATH,
+            "file_exists": os.path.exists(XGB_MODEL_PATH),
+        },
+    }
+
+    # Also inspect model input/output shapes if loaded
+    if yolo_interpreter:
+        inp = yolo_interpreter.get_input_details()
+        out = yolo_interpreter.get_output_details()
+        status["yolo"]["input_shape"] = str(inp[0]["shape"].tolist()) if inp else "N/A"
+        status["yolo"]["output_shape"] = str(out[0]["shape"].tolist()) if out else "N/A"
+        status["yolo"]["input_dtype"] = str(inp[0]["dtype"]) if inp else "N/A"
+
+    if mobilenet_interpreter:
+        inp = mobilenet_interpreter.get_input_details()
+        out = mobilenet_interpreter.get_output_details()
+        status["mobilenet"]["input_shape"] = str(inp[0]["shape"].tolist()) if inp else "N/A"
+        status["mobilenet"]["output_shape"] = str(out[0]["shape"].tolist()) if out else "N/A"
+        status["mobilenet"]["input_dtype"] = str(inp[0]["dtype"]) if inp else "N/A"
+
+    all_loaded = all(s["loaded"] for s in status.values())
+    return jsonify({"success": True, "all_loaded": all_loaded, "models": status})
+
+# --------------------------------------------------
 # PAGE ROUTES
 # --------------------------------------------------
 @app.route("/")
@@ -911,5 +1021,9 @@ if __name__ == "__main__":
     print(f"MobileNet model: {'Loaded' if mobilenet_interpreter else 'Not found'}")
     print(f"XGBoost model: {'Loaded' if xgb_model else 'Not found'}")
     print("=" * 50)
-    port = int(os.environ.get("PORT", 5000))
+    print("\nRegistered routes:")
+    for rule in app.url_map.iter_rules():
+        print(f"  {rule.rule:40s} -> {rule.endpoint:30s} methods={rule.methods}")
+    print("=" * 50)
+    port = int(os.environ.get("PORT", 5001))
     app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)

@@ -927,6 +927,7 @@ function escapeHtml(text) {
         }
 
         const detected = result.detected;
+        const modelsLoaded = result.models_loaded || {};
 
         if (liveResultIcon) liveResultIcon.textContent = detected ? '🚨' : '✅';
         if (liveResultStatus) liveResultStatus.textContent = detected ? 'THREAT DETECTED' : 'ALL CLEAR';
@@ -934,24 +935,49 @@ function escapeHtml(text) {
             liveResultHeader.className = 'live-result-header ' + (detected ? 'detected' : 'safe');
         }
 
-        if (liveResultObject) liveResultObject.textContent = result.object || '—';
-        if (liveResultConfidence) liveResultConfidence.textContent = result.confidence ? result.confidence + '%' : '—';
+        if (liveResultObject) liveResultObject.textContent = result.object || 'none';
 
+        // Always show confidence value
+        if (liveResultConfidence) {
+            const conf = result.confidence !== undefined ? result.confidence : 0;
+            liveResultConfidence.textContent = conf + '%';
+        }
+
+        // YOLO status — distinguish "not loaded" from "loaded, no detections"
         if (liveResultYolo) {
             const yolo = result.yolo;
-            if (yolo && yolo.available) {
-                liveResultYolo.textContent = yolo.detection_count > 0 ? `${yolo.detection_count} detection(s)` : 'No detections';
+            if (!modelsLoaded.yolo) {
+                liveResultYolo.textContent = '❌ Model not loaded';
+                liveResultYolo.style.color = '#ff6b6b';
+            } else if (yolo && yolo.available) {
+                if (yolo.detection_count > 0) {
+                    liveResultYolo.textContent = `${yolo.detection_count} detection(s)`;
+                    liveResultYolo.style.color = '#ff6b6b';
+                } else {
+                    const bestConf = yolo.best_confidence || 0;
+                    liveResultYolo.textContent = `No detections (peak: ${bestConf}%)`;
+                    liveResultYolo.style.color = '#35d06d';
+                }
             } else {
-                liveResultYolo.textContent = 'Not available';
+                liveResultYolo.textContent = '⚠️ Inference failed';
+                liveResultYolo.style.color = '#f0c861';
             }
         }
 
+        // MobileNet status — always show label + confidence
         if (liveResultMobilenet) {
             const mob = result.mobilenet;
-            if (mob && mob.available) {
-                liveResultMobilenet.textContent = `${mob.label} (${mob.confidence}%)`;
+            if (!modelsLoaded.mobilenet) {
+                liveResultMobilenet.textContent = '❌ Model not loaded';
+                liveResultMobilenet.style.color = '#ff6b6b';
+            } else if (mob && mob.available) {
+                const label = mob.label || 'unknown';
+                const conf = mob.confidence !== undefined ? mob.confidence : 0;
+                liveResultMobilenet.textContent = `${label} (${conf}%)`;
+                liveResultMobilenet.style.color = mob.suspicious ? '#ff6b6b' : '#35d06d';
             } else {
-                liveResultMobilenet.textContent = 'Not available';
+                liveResultMobilenet.textContent = '⚠️ Inference failed';
+                liveResultMobilenet.style.color = '#f0c861';
             }
         }
 

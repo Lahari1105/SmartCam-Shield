@@ -1923,6 +1923,91 @@ a {
    SCAN PAGE — TABS & LIVE CAMERA
    ======================================== */
 
+/* Scan page layout */
+.scan-premium-section {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px 60px;
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(212, 175, 55, 0.08), transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(212, 175, 55, 0.05), transparent 50%),
+        #050505;
+}
+
+.scan-premium-card {
+    width: 100%;
+    max-width: 680px;
+    background: rgba(12, 10, 6, 0.95);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 20px;
+    padding: 36px 32px 40px;
+    position: relative;
+    box-shadow:
+        0 0 60px rgba(212, 164, 58, 0.06),
+        inset 0 0 30px rgba(212, 164, 58, 0.02);
+    overflow: hidden;
+}
+
+.scan-premium-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at top center, rgba(255, 196, 73, 0.08), transparent 40%);
+    pointer-events: none;
+}
+
+.scan-premium-card::after {
+    content: "";
+    position: absolute;
+    left: 15%;
+    right: 15%;
+    top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #f0c861, transparent);
+    box-shadow: 0 0 12px rgba(240, 200, 97, 0.4);
+}
+
+.scan-premium-title {
+    text-align: center;
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #f0c861;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 0 30px rgba(240, 200, 97, 0.15);
+}
+
+.scan-tab-content {
+    position: relative;
+    z-index: 1;
+}
+
+.scan-bottom-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.9rem;
+    color: #6b5c36;
+    position: relative;
+    z-index: 1;
+}
+
+.scan-bottom-link a {
+    color: #f0c861;
+    font-weight: 700;
+    margin-left: 6px;
+    transition: color 0.3s ease;
+}
+
+.scan-bottom-link a:hover {
+    color: #ffd76a;
+    text-decoration: underline;
+}
+
 /* Tab Switcher */
 .scan-tabs {
     display: flex;
