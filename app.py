@@ -13,12 +13,18 @@ import numpy as np  # pyre-ignore[21]
 from PIL import Image  # pyre-ignore[21]
 import cv2  # pyre-ignore[21]
 
-# TensorFlow Lite
+# TensorFlow Lite — cascading fallback for Render/Linux compatibility
 try:
-    import tflite_runtime.interpreter as tflite  # pyre-ignore[21]
+    import tflite_runtime.interpreter as tflite  # pyre-ignore[21]  # type: ignore[import]
+    print("[STARTUP] Using tflite-runtime")
 except ImportError:
-    import tensorflow as tf  # pyre-ignore[21]
-    tflite = tf.lite  # type: ignore
+    try:
+        from ai_edge_litert import interpreter as tflite  # pyre-ignore[21]  # type: ignore[import]
+        print("[STARTUP] Using ai-edge-litert")
+    except ImportError:
+        import tensorflow as tf  # pyre-ignore[21]  # type: ignore[import]
+        tflite = tf.lite  # type: ignore
+        print(f"[STARTUP] Using full tensorflow {tf.__version__}")
 
 # XGBoost
 import xgboost as xgb  # pyre-ignore[21]
@@ -1009,18 +1015,23 @@ def reports():
 @app.route("/scan")
 def scan():
     return render_template("scan.html")
+# --------------------------------------------------
+# STARTUP LOGGING (runs under both gunicorn and direct python)
+# --------------------------------------------------
+print("=" * 50)
+print("SmartCam Shield starting...")
+print(f"YOLO model: {'Loaded' if yolo_interpreter else 'NOT LOADED'}")
+print(f"MobileNet model: {'Loaded' if mobilenet_interpreter else 'NOT LOADED'}")
+print(f"XGBoost model: {'Loaded' if xgb_model else 'NOT LOADED'}")
+print(f"YOLO path exists: {os.path.exists(YOLO_MODEL_PATH)} ({YOLO_MODEL_PATH})")
+print(f"MobileNet path exists: {os.path.exists(MOBILENET_MODEL_PATH)} ({MOBILENET_MODEL_PATH})")
+print(f"XGBoost path exists: {os.path.exists(XGB_MODEL_PATH)} ({XGB_MODEL_PATH})")
+print("=" * 50)
 
 # --------------------------------------------------
 # MAIN
 # --------------------------------------------------
 if __name__ == "__main__":
-    print("=" * 50)
-    print("SmartCam Shield starting...")
-    print(f"MongoDB: {MONGO_URI}")
-    print(f"YOLO model: {'Loaded' if yolo_interpreter else 'Not found'}")
-    print(f"MobileNet model: {'Loaded' if mobilenet_interpreter else 'Not found'}")
-    print(f"XGBoost model: {'Loaded' if xgb_model else 'Not found'}")
-    print("=" * 50)
     print("\nRegistered routes:")
     for rule in app.url_map.iter_rules():
         print(f"  {rule.rule:40s} -> {rule.endpoint:30s} methods={rule.methods}")
