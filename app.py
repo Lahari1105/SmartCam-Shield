@@ -4,7 +4,6 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_cors import CORS  # pyre-ignore[21]
 from functools import wraps
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import io
 import base64
 import uuid
@@ -15,7 +14,11 @@ from PIL import Image  # pyre-ignore[21]
 import cv2  # pyre-ignore[21]
 
 # TensorFlow Lite
-import tensorflow as tf  # pyre-ignore[21]
+try:
+    import tflite_runtime.interpreter as tflite  # pyre-ignore[21]
+except ImportError:
+    import tensorflow as tf  # pyre-ignore[21]
+    tflite = tf.lite  # type: ignore
 
 # XGBoost
 import xgboost as xgb  # pyre-ignore[21]
@@ -91,7 +94,7 @@ def load_tflite_model(model_path):
     if not os.path.exists(model_path):
         print(f"Model not found: {model_path}")
         return None
-    interpreter = tf.lite.Interpreter(model_path=model_path)
+    interpreter = tflite.Interpreter(model_path=model_path)
     interpreter.allocate_tensors()
     return interpreter
 
