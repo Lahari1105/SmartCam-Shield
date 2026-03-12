@@ -28,7 +28,7 @@ from bson.objectid import ObjectId  # pyre-ignore[21]
 import bcrypt  # pyre-ignore[21]
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24).hex()
+app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24).hex())
 CORS(app)
 
 # --------------------------------------------------
@@ -803,4 +803,5 @@ if __name__ == "__main__":
     print(f"MobileNet model: {'Loaded' if mobilenet_interpreter else 'Not found'}")
     print(f"XGBoost model: {'Loaded' if xgb_model else 'Not found'}")
     print("=" * 50)
-    app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
