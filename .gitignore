@@ -28,3 +28,8 @@ uploads/
 
 # Environment variables
 .env
+
+# Misc
+*.lnk
+*.code-workspace
+diagnose_models.py

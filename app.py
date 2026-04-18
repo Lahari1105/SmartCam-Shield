@@ -818,12 +818,41 @@ def detect():
             if isinstance(best_det, dict):
                 obj_label = best_det.get("label", obj_label)
 
+        # Save to MongoDB if user is logged in (throttle: max once per 30s)
+        scan_id = None
+        if "user_id" in session:
+            now_ts = datetime.now(timezone.utc).timestamp()
+            last_live_save = session.get("_last_live_save_ts", 0)
+            if now_ts - last_live_save >= 30:
+                try:
+                    thumb_b64 = pil_to_base64(image)
+                    scan_doc = {
+                        "user_id": session["user_id"],
+                        "username": session.get("username", ""),
+                        "video_filename": "Live Camera Scan",
+                        "status": fusion["summary"],
+                        "suspicious": detected,
+                        "confidence": overall_confidence,
+                        "total_frames": 1,
+                        "detection_count": len(detections) if isinstance(detections, list) else 0,
+                        "detections": list(detections)[:10] if isinstance(detections, list) else [],  # pyre-ignore[16]
+                        "best_detection": detections[0] if isinstance(detections, list) and len(detections) > 0 else None,
+                        "timestamp": datetime.now(timezone.utc),
+                        "thumbnail": thumb_b64,
+                        "scan_type": "live",
+                    }
+                    scan_id = str(scans_collection.insert_one(scan_doc).inserted_id)
+                    session["_last_live_save_ts"] = now_ts
+                except Exception as save_err:
+                    print(f"Failed to save live scan to history: {save_err}")
+
         return jsonify({
             "detected": detected,
             "object": obj_label,
             "confidence": overall_confidence,
             "summary": fusion["summary"],
             "reasons": fusion.get("reasons", []),
+            "scan_id": scan_id,
             "models_loaded": {
                 "yolo": yolo_interpreter is not None,
                 "mobilenet": mobilenet_interpreter is not None,
